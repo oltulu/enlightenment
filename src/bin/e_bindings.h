@@ -135,7 +135,8 @@ struct _E_Binding_Acpi
 struct _E_Binding_Swipe
 {
    E_Binding_Context ctxt;
-   double direction, length, fingers, error;
+   double direction, length, error;
+   unsigned int fingers;
    const char *action, *params;
 };
 
@@ -148,6 +149,7 @@ E_API void        e_bindings_key_reset(void);
 E_API void        e_bindings_wheel_reset(void);
 E_API void        e_bindings_edge_reset(void);
 E_API void        e_bindings_signal_reset(void);
+E_API void        e_bindings_swipe_reset(void);
 E_API void        e_bindings_reset(void);
 
 E_API void        e_bindings_mouse_add(E_Binding_Context ctxt, int button, E_Binding_Modifier mod, int any_mod, const char *action, const char *params);
@@ -210,6 +212,8 @@ typedef struct {
    double acceptance; //0 to 1
 } E_Binding_Swipe_Candidate;
 
+typedef void (*E_Bindings_Swipe_Live_Update)(void *data, Eina_Bool end, double direction, double length, double error, unsigned int fingers);
+
 /**
  * Direction is in radiens, 0 is pointing to the right. Going clockwise. (Only positive range)
  */
@@ -217,6 +221,9 @@ E_API void          e_bindings_swipe_add(E_Binding_Context ctxt, double directio
 E_API void          e_bindings_swipe_del(E_Binding_Context ctxt, double direction, double length, unsigned int fingers, double error, const char *action, const char *params);
 E_API E_Action*     e_bindings_swipe_handle(E_Binding_Context ctxt, E_Object *obj, double direction, double length, unsigned int fingers);
 E_API Eina_Inarray/*<E_Bindings_Swipe_Candidate>*/* e_bindings_swipe_find_candidates(E_Binding_Context ctxt, double direction, double lenght, unsigned int fingers);
+E_API void           e_bindings_swipe_live_update_hook_set(E_Bindings_Swipe_Live_Update update, void *data);
+E_API E_Bindings_Swipe_Live_Update e_bindings_swipe_live_update_hook_get(void);
+E_API void*          e_bindings_swipe_live_update_hook_data_get(void);
 
 E_API int e_bindings_evas_modifiers_convert(Evas_Modifier *modifiers);
 E_API int e_bindings_modifiers_to_ecore_convert(E_Binding_Modifier modifiers);

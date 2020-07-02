@@ -88,6 +88,7 @@ struct _E_Config
    Eina_List  *signal_bindings; // GUI
    Eina_List  *wheel_bindings; // GUI
    Eina_List  *acpi_bindings; // GUI
+   Eina_List  *swipe_bindings; // GUI
 
    Eina_List  *path_append_data; // GUI
    Eina_List  *path_append_images; // GUI
@@ -547,7 +548,8 @@ struct _E_Config_Binding_Acpi
 struct _E_Config_Binding_Swipe
 {
    int context;
-   double direction, length, fingers, error;
+   unsigned int fingers;
+   double direction, length, error;
    const char *action, *params;
 };
 
@@ -684,6 +686,7 @@ E_API void e_config_binding_mouse_free(E_Config_Binding_Mouse *ebm);
 E_API void e_config_binding_edge_free(E_Config_Binding_Edge *ebe);
 E_API void e_config_binding_key_free(E_Config_Binding_Key *ebk);
 E_API void e_config_binding_acpi_free(E_Config_Binding_Acpi *eba);
+E_API void e_config_binding_swipe_free(E_Config_Binding_Swipe *eba);
 
 extern E_API E_Config *e_config;
 extern E_API E_Config_Bindings *e_bindings;

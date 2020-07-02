@@ -107,11 +107,14 @@ _cb_input_dispatch(void *data, Ecore_Fd_Handler *hdlr EINA_UNUSED)
 
    while((event = libinput_get_event(li)))
      {
+        E_Bindings_Swipe_Live_Update live_update = e_bindings_swipe_live_update_hook_get();
+
         enum libinput_event_type type = libinput_event_get_type(event);
              struct libinput_device *dev = libinput_event_get_device(event);
         if (type == LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN)
           {
              struct libinput_event_gesture *gesture = libinput_event_get_gesture_event(event);
+
              Swipe_Stats *stats = _start_swipe_gesture_recognizition(dev);
              stats->fingers = libinput_event_gesture_get_finger_count(gesture);
              stats->pos.x = stats->pos.y = 0;
@@ -123,13 +126,18 @@ _cb_input_dispatch(void *data, Ecore_Fd_Handler *hdlr EINA_UNUSED)
 
              stats->pos.x += libinput_event_gesture_get_dx(gesture);
              stats->pos.y += libinput_event_gesture_get_dy(gesture);
-             //FIXME create some visual representation showing that gestures are starting to be recognized Eina_Inarray *res = e_bindings_swipe_find_candidates(E_BINDING_CONTEXT_NONE, _config_angle (stats->pos), eina_vector2_length_get(&stats->pos), stats->fingers);
+             if (live_update)
+               live_update(e_bindings_swipe_live_update_hook_data_get(), EINA_FALSE, _config_angle(stats->pos), eina_vector2_length_get(&stats->pos), 0.8, stats->fingers);
+             //else FIXME create some visual representation showing that gestures are starting to be recognized Eina_Inarray *res = e_bindings_swipe_find_candidates(E_BINDING_CONTEXT_NONE, _config_angle (stats->pos), eina_vector2_length_get(&stats->pos), stats->fingers);
           }
         else if (type == LIBINPUT_EVENT_GESTURE_SWIPE_END)
           {
              Swipe_Stats *stats = _find_swipe_gesture_recognizition(dev);
 
-             e_bindings_swipe_handle(E_BINDING_CONTEXT_NONE, NULL, _config_angle(stats->pos), eina_vector2_length_get(&stats->pos), stats->fingers);
+             if (live_update)
+               live_update(e_bindings_swipe_live_update_hook_data_get(), EINA_TRUE, _config_angle(stats->pos), eina_vector2_length_get(&stats->pos), 0.8, stats->fingers);
+             else
+               e_bindings_swipe_handle(E_BINDING_CONTEXT_NONE, NULL, _config_angle(stats->pos), eina_vector2_length_get(&stats->pos), stats->fingers);
 
              _end_swipe_gesture_recognizition(dev);
           }
@@ -202,8 +210,9 @@ e_modapi_init(E_Module *m EINA_UNUSED)
    _setup_libinput();
 
    //FIXME that should be a config screen
-   e_bindings_swipe_add(0, 0, 100, 3, 1.0, "desk_flip_by", "1 0");
+   /*e_bindings_swipe_add(0, 0, 100, 3, 1.0, "desk_flip_by", "1 0");
    e_bindings_swipe_add(0, M_PI, 100, 3, 1.0, "desk_flip_by", "-1 0");
+   e_bindings_swipe_add(0, M_PI+M_PI/2, 100, 4, 1.0, "window_maximized_toggle", "");*/
 
    return 1;
 }

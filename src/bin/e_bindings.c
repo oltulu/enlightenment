@@ -22,6 +22,9 @@ static Eina_List *swipe_bindings = NULL;
 
 static unsigned int bindings_disabled = 0;
 
+static E_Bindings_Swipe_Live_Update live_update;
+static E_Bindings_Swipe_Live_Update live_update_data;
+
 EINTERN E_Action *(*e_binding_key_list_cb)(E_Binding_Context, Ecore_Event_Key*, E_Binding_Modifier, E_Binding_Key **);
 
 typedef struct _E_Binding_Edge_Data E_Binding_Edge_Data;
@@ -1691,4 +1694,23 @@ e_bindings_swipe_find_candidates(E_Binding_Context ctxt, double direction, doubl
      }
 
    return ret;
+}
+
+E_API void
+e_bindings_swipe_live_update_hook_set(E_Bindings_Swipe_Live_Update update, void *data)
+{
+   live_update = update;
+   live_update_data = data;
+}
+
+E_API E_Bindings_Swipe_Live_Update
+e_bindings_swipe_live_update_hook_get(void)
+{
+   return live_update;
+}
+
+E_API void*
+e_bindings_swipe_live_update_hook_data_get(void)
+{
+   return live_update_data;
 }
