@@ -10,6 +10,7 @@ typedef struct _E_Config_Binding_Edge       E_Config_Binding_Edge;
 typedef struct _E_Config_Binding_Signal     E_Config_Binding_Signal;
 typedef struct _E_Config_Binding_Wheel      E_Config_Binding_Wheel;
 typedef struct _E_Config_Binding_Acpi       E_Config_Binding_Acpi;
+typedef struct _E_Config_Binding_Swipe      E_Config_Binding_Swipe;
 typedef struct _E_Config_Desktop_Background E_Config_Desktop_Background;
 typedef struct _E_Config_Desklock_Background E_Config_Desklock_Background;
 typedef struct _E_Config_Desktop_Name       E_Config_Desktop_Name;
@@ -452,6 +453,7 @@ struct E_Config_Bindings
    Eina_List  *signal_bindings; // GUI
    Eina_List  *wheel_bindings; // GUI
    Eina_List  *acpi_bindings; // GUI
+   Eina_List  *swipe_bindings;
 };
 
 struct _E_Config_Desklock_Background
@@ -539,6 +541,13 @@ struct _E_Config_Binding_Wheel
 struct _E_Config_Binding_Acpi
 {
    int         context, type, status;
+   const char *action, *params;
+};
+
+struct _E_Config_Binding_Swipe
+{
+   int context;
+   double direction, length, fingers, error;
    const char *action, *params;
 };
 

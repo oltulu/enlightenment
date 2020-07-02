@@ -7,6 +7,7 @@ static void               _e_bindings_edge_free(E_Binding_Edge *bind);
 static void               _e_bindings_signal_free(E_Binding_Signal *bind);
 static void               _e_bindings_wheel_free(E_Binding_Wheel *bind);
 static void               _e_bindings_acpi_free(E_Binding_Acpi *bind);
+static void               _e_bindings_swipe_free(E_Binding_Swipe *bind);
 static Eina_Bool          _e_bindings_edge_cb_timer(void *data);
 
 /* local subsystem globals */
@@ -17,6 +18,7 @@ static Eina_List *edge_bindings = NULL;
 static Eina_List *signal_bindings = NULL;
 static Eina_List *wheel_bindings = NULL;
 static Eina_List *acpi_bindings = NULL;
+static Eina_List *swipe_bindings = NULL;
 
 static unsigned int bindings_disabled = 0;
 
@@ -98,6 +100,7 @@ e_bindings_shutdown(void)
    E_FREE_LIST(signal_bindings, _e_bindings_signal_free);
    E_FREE_LIST(wheel_bindings, _e_bindings_wheel_free);
    E_FREE_LIST(acpi_bindings, _e_bindings_acpi_free);
+   E_FREE_LIST(swipe_bindings, _e_bindings_swipe_free);
 
    return 1;
 }
@@ -322,6 +325,18 @@ e_bindings_key_reset(void)
      e_bindings_key_add(ebk->context, ebk->key, ebk->modifiers,
                         ebk->any_mod, ebk->action, ebk->params);
    e_comp_canvas_keys_grab();
+}
+
+E_API void
+e_bindings_swipe_reset(void)
+{
+   E_Config_Binding_Swipe *eswipe;
+   Eina_List *l;
+
+   E_FREE_LIST(swipe_bindings, _e_bindings_swipe_free);
+
+   EINA_LIST_FOREACH(e_bindings->swipe_bindings, l, eswipe)
+     e_bindings_swipe_add(eswipe->context, eswipe->direction, eswipe->length, eswipe->fingers, eswipe->error, eswipe->action, eswipe->params);
 }
 
 E_API void
@@ -1514,6 +1529,14 @@ _e_bindings_acpi_free(E_Binding_Acpi *binding)
    E_FREE(binding);
 }
 
+static void
+_e_bindings_swipe_free(E_Binding_Swipe *binding)
+{
+   if (binding->action) eina_stringshare_del(binding->action);
+   if (binding->params) eina_stringshare_del(binding->params);
+   E_FREE(binding);
+}
+
 E_API int
 e_bindings_context_match(E_Binding_Context bctxt, E_Binding_Context ctxt)
 {
@@ -1582,4 +1605,90 @@ _e_bindings_edge_cb_timer(void *data)
    E_FREE(ev);
 
    return ECORE_CALLBACK_CANCEL;
+}
+
+E_API void
+e_bindings_swipe_add(E_Binding_Context ctxt, double direction, double length, unsigned int fingers, double error, const char *action, const char *params)
+{
+   E_Binding_Swipe *binding = E_NEW(E_Binding_Swipe, 1);
+
+   binding->ctxt = ctxt;
+   binding->direction = direction;
+   binding->length = length;
+   binding->fingers = fingers;
+   binding->error = error;
+   if (action)
+     binding->action = eina_stringshare_add(action);
+   if (params)
+     binding->params = eina_stringshare_add(params);
+
+   swipe_bindings = eina_list_append(swipe_bindings, binding);
+}
+
+E_API void
+e_bindings_swipe_del(E_Binding_Context ctxt, double direction, double length, unsigned int fingers, double error, const char *action, const char *params)
+{
+   E_Binding_Swipe *binding;
+   Eina_List *n;
+
+   EINA_LIST_FOREACH(swipe_bindings, n, binding)
+     {
+        if (binding->ctxt == ctxt &&
+            binding->action == action &&
+            binding->params == params &&
+            EINA_DBL_EQ(direction, binding->direction) &&
+            EINA_DBL_EQ(length, binding->length) &&
+            EINA_DBL_EQ(fingers, binding->fingers) &&
+            EINA_DBL_EQ(error, binding->error))
+          {
+             _e_bindings_swipe_free(binding);
+             swipe_bindings = eina_list_remove_list(swipe_bindings, n);
+             break;
+          }
+     }
+}
+
+E_API E_Action*
+e_bindings_swipe_handle(E_Binding_Context ctxt, E_Object *obj, double direction, double length, unsigned int fingers)
+{
+   E_Binding_Swipe *binding;
+   Eina_List *n;
+   E_Action *act = NULL;
+
+   EINA_LIST_FOREACH(swipe_bindings, n, binding)
+     {
+        if (binding->ctxt == ctxt &&
+            binding->length < length &&
+            EINA_DBL_EQ(fingers, binding->fingers) &&
+            fmod(binding->direction - binding->error, 2*M_PI) < direction &&
+            fmod(binding->direction + binding->error, 2*M_PI) > direction)
+          {
+             act = e_action_find(binding->action);
+             act->func.go(obj, binding->params);
+          }
+     }
+   return act;
+}
+
+
+E_API Eina_Inarray*
+e_bindings_swipe_find_candidates(E_Binding_Context ctxt, double direction, double length, unsigned int fingers)
+{
+   Eina_Inarray *ret = eina_inarray_new(sizeof(E_Binding_Swipe_Candidate), 10);
+   E_Binding_Swipe *binding;
+   Eina_List *n;
+
+   EINA_LIST_FOREACH(swipe_bindings, n, binding)
+     {
+        if (binding->ctxt == ctxt &&
+            EINA_DBL_EQ(fingers, binding->fingers) &&
+            fmod(binding->direction - binding->error, 2*M_PI) < direction &&
+            fmod(binding->direction + binding->error, 2*M_PI) > direction)
+          {
+             E_Binding_Swipe_Candidate cad = {binding->action, length / binding->length};
+             eina_inarray_push(ret, &cad);
+          }
+     }
+
+   return ret;
 }

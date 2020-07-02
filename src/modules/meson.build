@@ -49,6 +49,7 @@ mods = [
   'luncher',
   'teamwork',
   'vkbd',
+  'gesture_recognition',
 # modules have a custom binary as well
   'battery',
   'cpufreq',
