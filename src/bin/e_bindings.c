@@ -48,6 +48,7 @@ e_bindings_init(void)
    E_Config_Binding_Edge *ebe;
    E_Config_Binding_Key *ebk;
    E_Config_Binding_Acpi *eba;
+   E_Config_Binding_Acpi *ebsw;
    Eina_List *l;
 
    EINA_LIST_FOREACH(e_bindings->mouse_bindings, l, ebm)
@@ -90,6 +91,8 @@ e_bindings_init(void)
    EINA_LIST_FOREACH(e_bindings->acpi_bindings, l, eba)
      e_bindings_acpi_add(eba->context, eba->type, eba->status,
                          eba->action, eba->params);
+
+   e_bindings_swipe_reset();
 
    return 1;
 }
@@ -350,6 +353,7 @@ e_bindings_reset(void)
    e_bindings_wheel_reset();
    e_bindings_edge_reset();
    e_bindings_key_reset();
+   e_bindings_swipe_reset();
 }
 
 E_API void

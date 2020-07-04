@@ -209,11 +209,6 @@ e_modapi_init(E_Module *m EINA_UNUSED)
    active_gestures = eina_hash_pointer_new(free);
    _setup_libinput();
 
-   //FIXME that should be a config screen
-   /*e_bindings_swipe_add(0, 0, 100, 3, 1.0, "desk_flip_by", "1 0");
-   e_bindings_swipe_add(0, M_PI, 100, 3, 1.0, "desk_flip_by", "-1 0");
-   e_bindings_swipe_add(0, M_PI+M_PI/2, 100, 4, 1.0, "window_maximized_toggle", "");*/
-
    return 1;
 }
 
