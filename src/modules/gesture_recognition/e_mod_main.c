@@ -39,6 +39,7 @@ _find_all_touch_input_devices(const char *path, struct libinput *li)
    EINA_ITERATOR_FOREACH(input_devies, info)
      {
         struct libinput_device *dev = libinput_path_add_device(li, info->path);
+
         if (!dev) continue;
 
         if (!libinput_device_has_capability(dev, LIBINPUT_DEVICE_CAP_GESTURE))

@@ -276,7 +276,12 @@ _action_change_cb(void *data)
 static int
 _swipe_binding_sort_cb(E_Config_Binding_Swipe *a, E_Config_Binding_Swipe *b)
 {
-   return a->direction - b->direction;
+   int finger_diff = (a->fingers == b->fingers)*-1;
+   if (!finger_diff)
+     {
+        return a->direction - b->direction;
+     }
+   return finger_diff;
 }
 
 static void
@@ -459,6 +464,57 @@ _basic_apply_data(E_Config_Dialog *cfd EINA_UNUSED, E_Config_Dialog_Data *cfdata
    return 1;
 }
 
+static double
+get_degrees(double radians)
+{
+   double ret = 360*(radians/(2*M_PI));
+
+   return ret;
+}
+
+static Evas_Object*
+create_visualisation(Evas *e, E_Config_Binding_Swipe *bi)
+{
+   Evas_Vg_Container *vg = NULL;
+   Evas_Vg_Shape *container, *shape, *viewport = NULL;
+
+   unsigned int center_x = 15, center_y = 15;
+
+   double start = (-(get_degrees(bi->direction - bi->error)+90));
+   double end = (-(get_degrees(bi->direction + bi->error)+90));
+
+   vg = evas_object_vg_add(e);
+   evas_object_vg_viewbox_set(vg, EINA_RECT(0, 0, 50, 50));
+
+   container = evas_vg_container_add(vg);
+
+   viewport = evas_vg_shape_add(container);
+   evas_vg_shape_append_rect(viewport, 0, 0, 51, 51, 0, 0);
+   evas_vg_shape_stroke_cap_set(viewport, EVAS_VG_CAP_SQUARE);
+   evas_vg_shape_stroke_color_set(viewport, 0, 0, 0, 0);
+   evas_vg_shape_stroke_width_set(viewport, 1);
+
+   shape = evas_vg_shape_add(container);
+   evas_vg_shape_append_rect(shape, 1, 1, 29, 29, 0, 0);
+   evas_vg_shape_stroke_cap_set(shape, EVAS_VG_CAP_SQUARE);
+   evas_vg_shape_stroke_color_set(shape, 100, 100, 100, 255);
+   evas_vg_shape_stroke_width_set(shape, 1);
+
+   shape = evas_vg_shape_add(container);
+   evas_vg_shape_append_arc(shape, 4, 4, 24, 24, start, start-end);
+   evas_vg_shape_append_line_to(shape, center_x, center_y);
+   evas_vg_shape_append_line_to(shape, center_x + cos(bi->direction + bi->error)*11, center_y + sin(bi->direction + bi->error)*11);
+   evas_vg_shape_stroke_cap_set(shape, EVAS_VG_CAP_SQUARE);
+   evas_vg_shape_stroke_color_set(shape, 255, 0, 0, 255);
+   evas_vg_shape_stroke_width_set(shape, 2);
+
+   evas_object_vg_root_node_set(vg, container);
+
+   evas_object_show(vg);
+
+   return vg;
+}
+
 static void
 _update_swipe_binding_list(E_Config_Dialog_Data *cfdata)
 {
@@ -466,6 +522,7 @@ _update_swipe_binding_list(E_Config_Dialog_Data *cfdata)
    char b2[64], b3[64];
    Eina_List *l;
    E_Config_Binding_Swipe *bi;
+   unsigned int previous_fingers = 0;
 
    evas_event_freeze(evas_object_evas_get(cfdata->gui.o_binding_list));
    edje_freeze();
@@ -479,9 +536,17 @@ _update_swipe_binding_list(E_Config_Dialog_Data *cfdata)
 
    EINA_LIST_FOREACH(cfdata->binding.swipe, l, bi)
      {
+
+        if (bi->fingers != previous_fingers)
+          {
+             snprintf(b3, sizeof(b3), "%d Fingers", bi->fingers);
+             previous_fingers = bi->fingers;
+             e_widget_ilist_header_append(cfdata->gui.o_binding_list, NULL, b3);
+          }
         snprintf(b2, sizeof(b2), "s%d", i);
-        snprintf(b3, sizeof(b3), "%d,%f,%f,%f", bi->fingers, bi->direction, bi->length, bi->error);
-        e_widget_ilist_append(cfdata->gui.o_binding_list, NULL, b3, _binding_change_cb, cfdata, b2);
+        snprintf(b3, sizeof(b3), "Length: %.2f Error: %.2f", bi->length, bi->error);
+
+        e_widget_ilist_append(cfdata->gui.o_binding_list, create_visualisation(evas_object_evas_get(cfdata->gui.o_binding_list), bi), b3, _binding_change_cb, cfdata, b2);
         i++;
      }
    e_widget_ilist_go(cfdata->gui.o_binding_list);
@@ -687,6 +752,7 @@ _update_swipe_cb(void *data, Eina_Bool end, double direction, double length, dou
      }
    else
      {
+
         char text_buf[1000];
         snprintf(text_buf, sizeof(text_buf), "Using %d Fingers<br> <b>Direction</b> %f <br> <b>Length</b> %f<br> <b>Error</b> %f<br>", fingers, direction, length, error);
         e_dialog_text_set(cfdata->locals.dia, text_buf);
